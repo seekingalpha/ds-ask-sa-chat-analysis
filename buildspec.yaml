@@ -1,0 +1,44 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    DOCKERHUB_USERNAME: ds-dockerhub-seekingalpha-ci:username
+    DOCKERHUB_PASSWORD: ds-dockerhub-seekingalpha-ci:password
+  variables:
+    REPO_NAME: ds-repo-template  # consider using codebuild variables and toml file's project name in the docker image.
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      python: 3.9
+    commands:
+      - pwd
+      - ls
+      - pip install --quiet .[build]
+      - export PYTHONPATH=$PYTHONPATH:$(pwd)  # Add current directory to PYTHONPATH
+
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 744522205193.dkr.ecr.us-west-2.amazonaws.com
+      - echo "Logging in to Docker Hub..."
+      - echo ${DOCKERHUB_PASSWORD} | docker login --username ${DOCKERHUB_USERNAME} --password-stdin
+
+  build:
+    on-failure: ABORT
+    commands:
+      - echo "Building the package"
+      - docker build -t ${REPO_NAME} .
+      - docker tag ${REPO_NAME}:latest 744522205193.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME}:latest
+      - echo "Uploading package to S3"
+      - docker push 744522205193.dkr.ecr.us-west-2.amazonaws.com/${REPO_NAME}:latest
+
+  post_build:
+    on-failure: ABORT
+    commands:
+      - echo "SageMaker Config:"
+      - cat sagemaker_pipeline/config.yaml
+      - echo "Upsert SageMaker Pipeline"
+      - python3 sagemaker_pipeline/sm_pipeline.py

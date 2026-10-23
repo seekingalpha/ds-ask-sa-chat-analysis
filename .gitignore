@@ -1,0 +1,19 @@
+*.csv
+*.ipynb_checkpoints
+*.png
+.idea
+._.ipynb_checkpoints
+*.log
+
+# Byte-compiled / optimized / compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Setuptools distribution / packaging artifacts
+*.egg-info/
+*.egg
+
+# Python build artifacts
+build/
+dist/

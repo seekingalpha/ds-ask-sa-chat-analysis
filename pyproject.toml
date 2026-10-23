@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ds-repo-template"
+version = "0.0.1"
+description = ""
+readme = "README.md"
+authors = [
+    { name = "Dmytro Harmatiuk", email = "dmytroh@seekingalpha.com" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "redshift_connector",
+    "sagemaker",
+    "pandas",
+    "pyyaml",
+    "tqdm",
+    "fastparquet",
+    "pyarrow",
+    "slack_sdk",
+    "boto3",
+    "s3fs",
+    "typeguard",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = ["ds", "template"]
+
+[project.urls]
+Homepage = "https://github.com/seekingalpha/ds-repo-template"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "flake8",
+    "flake8-pyproject",
+    "flake8-docstrings",
+    "pre-commit",
+]
+build = [
+    "boto3",
+    "sagemaker",
+    "pyyaml",
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 79
