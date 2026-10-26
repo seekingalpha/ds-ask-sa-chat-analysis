@@ -11,6 +11,7 @@ import logging
 import boto3
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import Processor
+from sagemaker.workflow.parameters import ParameterString
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.pipeline_definition_config import (
@@ -28,18 +29,6 @@ from logger.logger_setup import setup_logger
 
 setup_logger()
 logger = logging.getLogger(__name__)
-
-# Retry only infrastructure problems (no free GPU instance, AWS-side
-# errors); a failing task (exit code 1) is not retried.
-INFRA_RETRY = SageMakerJobStepRetryPolicy(
-    exception_types=[
-        SageMakerJobExceptionTypeEnum.CAPACITY_ERROR,
-        SageMakerJobExceptionTypeEnum.INTERNAL_ERROR,
-    ],
-    interval_seconds=300,
-    backoff_rate=2.0,
-    max_attempts=3,
-)
 
 
 def load_pipeline_config() -> dict:
@@ -60,15 +49,30 @@ def load_pipeline_config() -> dict:
     return config
 
 
-def build_steps(config: dict, session) -> list:
+def capacity_retry_policy(config: dict) -> SageMakerJobStepRetryPolicy:
+    """Retry only infrastructure problems (no free GPU instance, AWS-side errors)."""
+    retry = config["capacity_retry"]
+    return SageMakerJobStepRetryPolicy(
+        exception_types=[
+            SageMakerJobExceptionTypeEnum.CAPACITY_ERROR,
+            SageMakerJobExceptionTypeEnum.INTERNAL_ERROR,
+        ],
+        interval_seconds=retry["interval_seconds"],
+        backoff_rate=retry["backoff_rate"],
+        expire_after_mins=retry["expire_after_mins"],
+    )
+
+
+def build_steps(config: dict, session, instance_type) -> list:
     """One ProcessingStep per task: `python3 main.py --task <task>`."""
     network_config = NetworkConfig(**config["network_config"])
+    retry = capacity_retry_policy(config)
     steps = []
     for task, task_cfg in config["tasks"].items():
         processor = Processor(
             role=config["role_arn"],
             image_uri=config["docker_image_uri"],
-            instance_type=config["instance_type"],
+            instance_type=instance_type,
             instance_count=1,
             volume_size_in_gb=config["volume_size_in_gb"],
             max_runtime_in_seconds=task_cfg["max_runtime_in_seconds"],
@@ -81,7 +85,7 @@ def build_steps(config: dict, session) -> list:
                 name=task_cfg["step_name"],
                 processor=processor,
                 job_arguments=["main.py", "--task", task],
-                retry_policies=[INFRA_RETRY],
+                retry_policies=[retry],
             )
         )
         logger.info(f"Step {task_cfg['step_name']}: main.py --task {task}")
@@ -89,9 +93,16 @@ def build_steps(config: dict, session) -> list:
 
 
 def build_pipeline(config: dict, session) -> Pipeline:
+    # Overridable per execution, e.g. ml.g5.4xlarge when g6 capacity is short
+    instance_type = ParameterString(
+        name="InstanceType", default_value=config["instance_type"]
+    )
     return Pipeline(
         name=config["pipeline_name"],
-        steps=build_steps(config, session),  # no depends_on: run in parallel
+        parameters=[instance_type],
+        steps=build_steps(
+            config, session, instance_type
+        ),  # no depends_on: parallel
         sagemaker_session=session,
         pipeline_definition_config=PipelineDefinitionConfig(
             use_custom_job_prefix=True

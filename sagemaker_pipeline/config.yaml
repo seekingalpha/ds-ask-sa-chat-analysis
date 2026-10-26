@@ -6,7 +6,17 @@ role_arn: 'arn:aws:iam::744522205193:role/AmazonSageMaker-DSExecutionRole'
 # One processing job per task, both start at the same time (no dependency):
 # a failure of one task does not affect the other.
 # Needs a quota of at least 2 concurrent ml.g6.4xlarge processing instances.
+# Default of the pipeline parameter InstanceType: a manual run can override it,
+# e.g. with ml.g5.4xlarge (A10G 24 GB) when AWS has no free g6 capacity.
 instance_type: 'ml.g6.4xlarge'
+
+# Retry when AWS has no free GPU instance (CapacityError) or on SageMaker
+# internal errors: waits 10, 15, 22, ... min between attempts, gives up after
+# 4 h. A failing task (exit code 1) is never retried.
+capacity_retry:
+  interval_seconds: 600
+  backoff_rate: 1.5
+  expire_after_mins: 240
 # gemma-2-9b-it is ~18 GB on disk (HF_HOME is on this volume)
 volume_size_in_gb: 60
 tasks:
