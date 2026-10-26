@@ -1,0 +1,21 @@
+REGION_NAME: 'us-west-2'
+
+# S3: intermediate CSVs for Redshift COPY
+BUCKET_NAME: 'seekingalpha-datascience'
+S3_PROJECT_DIR: 'shchur/ask_sa_sentiment_followup_msg_analysis/'
+UPDATE_TABLE_DIR: 'update_table/'
+
+# Redshift
+REDSHIFT_SECRET_NAME: 'ds-redshift-secret'
+HOST: 'production.cp9zb5vru92h.us-west-2.redshift.amazonaws.com'
+PORT: 5439
+DATABASE: 'sadw'
+COPY_ROLE_ARN: 'arn:aws:iam::714212176917:role/redshift-access-to-seekingalpha-datascience-bucket'
+
+# Hugging Face token lives in Secrets Manager, never in this file
+HF_SECRET_NAME: 'ds-ask-sa-hf-token'
+HF_SECRET_KEY: 'token'
+
+# Target tables
+SENTIMENT_TABLE: 'ds.production__ask_sa_sentiment_followup_msg_analysis'
+NER_TABLE: 'ds.production__ask_sa_message_entity_extraction'

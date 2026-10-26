@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.vscode
+**/__pycache__
+**/*.py[cod]
+**/.ipynb_checkpoints
+notebooks/
+*.log
+*.csv
+*.egg-info
+build/
+dist/
+venv/
+.venv/

@@ -1,0 +1,26 @@
+# Daily at 07:00 UTC
+schedule: "0 7 ? * MON-SUN"
+execute_on_update: False
+role_arn: 'arn:aws:iam::744522205193:role/AmazonSageMaker-DSExecutionRole'
+
+# One processing job per task, both start at the same time (no dependency):
+# a failure of one task does not affect the other.
+# Needs a quota of at least 2 concurrent ml.g6.4xlarge processing instances.
+instance_type: 'ml.g6.4xlarge'
+# gemma-2-9b-it is ~18 GB on disk (HF_HOME is on this volume)
+volume_size_in_gb: 60
+tasks:
+  sentiment:
+    step_name: 'ask-sa-followup-sentiment'
+    max_runtime_in_seconds: 10800  # 3 h; a normal day takes minutes
+  ner:
+    step_name: 'ask-sa-entity-extraction'
+    max_runtime_in_seconds: 14400  # 4 h; a 4-day backlog took ~1 h
+
+network_config:
+  subnets:
+    - 'subnet-576a6720'
+    - 'subnet-7d025924'
+    - 'subnet-b46a83d0'
+  security_group_ids:
+    - 'sg-26240842'

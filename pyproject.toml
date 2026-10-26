@@ -3,26 +3,26 @@ requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ds-repo-template"
+name = "ds-ask-sa-chat-analysis"
 version = "0.0.1"
-description = ""
+description = "Ask SA chat analysis: follow-up sentiment and entity extraction (NER) jobs"
 readme = "README.md"
 authors = [
-    { name = "Dmytro Harmatiuk", email = "dmytroh@seekingalpha.com" },
+    { name = "Andrii Shchur", email = "andriis@seekingalpha.com" },
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
-    "redshift_connector",
-    "sagemaker",
+    # LLM stack: the versions the jobs were tested with in SageMaker
+    "torch==2.8.0",
+    "transformers==4.57.6",
+    "accelerate==1.15.0",
+    # data / AWS
     "pandas",
+    "numpy",
     "pyyaml",
     "tqdm",
-    "fastparquet",
-    "pyarrow",
-    "slack_sdk",
     "boto3",
-    "s3fs",
-    "typeguard",
+    "redshift_connector",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -30,10 +30,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-keywords = ["ds", "template"]
+keywords = ["ds", "ask-sa", "sentiment", "ner"]
 
 [project.urls]
-Homepage = "https://github.com/seekingalpha/ds-repo-template"
+Homepage = "https://github.com/seekingalpha/ds-ask-sa-chat-analysis"
 
 [project.optional-dependencies]
 dev = [
@@ -46,9 +46,12 @@ dev = [
 ]
 build = [
     "boto3",
-    "sagemaker",
+    "sagemaker>=2.200,<3",
     "pyyaml",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.black]
 line-length = 79

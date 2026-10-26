@@ -5,17 +5,19 @@ env:
     DOCKERHUB_USERNAME: ds-dockerhub-seekingalpha-ci:username
     DOCKERHUB_PASSWORD: ds-dockerhub-seekingalpha-ci:password
   variables:
-    REPO_NAME: ds-repo-template  # consider using codebuild variables and toml file's project name in the docker image.
+    REPO_NAME: ds-ask-sa-chat-analysis  # consider using codebuild variables and toml file's project name in the docker image.
 
 phases:
   install:
     on-failure: ABORT
     runtime-versions:
-      python: 3.9
+      python: 3.12
     commands:
       - pwd
       - ls
-      - pip install --quiet .[build]
+      # only what sm_pipeline.py needs; the project itself (torch etc.) is installed in the Docker image
+      # SageMaker SDK v3 removed the modules sm_pipeline.py uses
+      - pip install --quiet boto3 "sagemaker>=2.200,<3" pyyaml
       - export PYTHONPATH=$PYTHONPATH:$(pwd)  # Add current directory to PYTHONPATH
 
   pre_build:

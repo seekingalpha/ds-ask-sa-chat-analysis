@@ -1,29 +1,28 @@
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.12
 
 FROM python:${PYTHON_VERSION}-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # Hugging Face model cache (~18 GB for gemma-2-9b-it) on the processing volume
+    HF_HOME=/opt/ml/processing/hf_cache
 
-# Set the working directory in the container
 WORKDIR /opt/ml/code
 
-# Copy only dependency-related files first
-COPY pyproject.toml .
-
-# Install project as a package
+# CUDA build of torch, same as the tested SageMaker kernel (2.8.0, CUDA 12.9).
+# Own layer: the biggest download, changes rarely.
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --quiet .
+    pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu129
 
-# Copy the application code
+# Project packages (src/) and the rest of the dependencies from pyproject.toml
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install .
+
+# main.py, variables.yaml, queries/, logger/, ...
 COPY . .
 
-# Ensure that the current folder is in the PYTHONPATH
-ENV PYTHONPATH="${PYTHONPATH}:."
-
-RUN echo "Docker pwd" ; pwd
-RUN echo "Docker ls" ; ls -lha
-
-# Define the entry point to your script
+# The pipeline passes e.g. ["main.py", "--task", "ner"]
 ENTRYPOINT ["python3"]
